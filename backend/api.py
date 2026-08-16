@@ -13,17 +13,6 @@ from backend.services.training_service import (
 
 from fastapi.middleware.cors import CORSMiddleware
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://sbi-stock-predictor.vercel.app",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 app = FastAPI(
@@ -38,18 +27,18 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "https://sbi-stock-predictor.vercel.app",
     ],
-
     allow_credentials=True,
-
     allow_methods=["*"],
-
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
+
+
+
 
 
 prediction_service = (
