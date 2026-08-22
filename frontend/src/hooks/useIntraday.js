@@ -10,7 +10,9 @@ const API_URL =
  *   {
  *     bars:           [{ time, close, high, low, volume }],
  *     previousClose:  number | null,
- *     lastUpdate:     Date | null
+ *     lastUpdate:     Date | null,
+ *     dataSource:     "today" | "last_session" | "fallback" | "none",
+ *     error:          string | null
  *   }
  *
  * Cadence adapts to market state (faster during OPEN, slower when closed).
@@ -19,6 +21,9 @@ function useIntraday(interval = "1m", period = "1d") {
     const [bars, setBars] = useState([]);
     const [previousClose, setPreviousClose] = useState(null);
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [dataSource, setDataSource] = useState(null);
+    const [error, setError] = useState(null);
+    const [hasReceivedFirstResponse, setHasReceivedFirstResponse] = useState(false);
     const timerRef = useRef(null);
     const cancelledRef = useRef(false);
 
@@ -30,14 +35,19 @@ function useIntraday(interval = "1m", period = "1d") {
                 const res = await fetch(
                     `${API_URL}/api/intraday?interval=${interval}&period=${period}`
                 );
-                if (!res.ok) throw new Error("intraday fetch failed");
+                if (!res.ok) throw new Error(`intraday fetch failed (${res.status})`);
                 const data = await res.json();
                 if (cancelledRef.current) return;
                 setBars(data.bars || []);
                 setPreviousClose(data.previous_close ?? null);
+                setDataSource(data.data_source || null);
+                setError(data.error || null);
                 setLastUpdate(new Date());
+                setHasReceivedFirstResponse(true);
             } catch (err) {
                 console.error("useIntraday:", err);
+                setError(err.message || String(err));
+                setHasReceivedFirstResponse(true);
             }
         }
 
@@ -68,7 +78,14 @@ function useIntraday(interval = "1m", period = "1d") {
         };
     }, [interval, period]);
 
-    return { bars, previousClose, lastUpdate };
+    return {
+        bars,
+        previousClose,
+        lastUpdate,
+        dataSource,
+        error,
+        isInitialLoad: !hasReceivedFirstResponse
+    };
 }
 
 export default useIntraday;

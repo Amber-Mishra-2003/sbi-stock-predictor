@@ -59,7 +59,8 @@ function LiveTooltip({ active, payload, label }) {
  * During CLOSED → polls every 60s, no glow, "MARKET CLOSED" overlay
  */
 function LiveChart() {
-    const { bars, previousClose, lastUpdate } = useIntraday("1m", "1d");
+    const { bars, previousClose, lastUpdate, dataSource, error, isInitialLoad } =
+        useIntraday("1m", "1d");
     const session = market_session(); // lightweight cached check
 
     // Compute chart-friendly data (recharts needs flat numeric fields)
@@ -87,6 +88,19 @@ function LiveChart() {
     }, [chartData]);
 
     if (!chartData.length) {
+        // First response hasn't arrived yet → show the spinner.
+        // After first response, if bars are still empty, show a clearer
+        // "no ticks yet" message instead of an indefinite loader.
+        const message = isInitialLoad
+            ? "Loading intraday ticks..."
+            : session === "PRE"
+                ? "Pre-open session — live ticks start at 09:15 IST"
+                : session === "OPEN"
+                    ? "Awaiting first tick from exchange..."
+                    : session === "POST"
+                        ? "Closing auction — today's session ended"
+                        : "Market closed — no recent intraday ticks available";
+
         return (
             <motion.section
                 className="card live-chart"
@@ -95,8 +109,13 @@ function LiveChart() {
                 transition={{ duration: 0.55 }}
             >
                 <div className="chart-loading">
-                    <span className="chart-loader" />
-                    Loading intraday ticks...
+                    {isInitialLoad && <span className="chart-loader" />}
+                    <span>{message}</span>
+                    {error && !isInitialLoad && (
+                        <small style={{ opacity: 0.6, marginLeft: 8 }}>
+                            ({error})
+                        </small>
+                    )}
                 </div>
             </motion.section>
         );
@@ -104,6 +123,7 @@ function LiveChart() {
 
     const isUp = stats.change >= 0;
     const sessionClass = session?.toLowerCase() || "closed";
+    const isStale = dataSource === "last_session" || dataSource === "fallback";
 
     return (
         <motion.section
@@ -138,6 +158,12 @@ function LiveChart() {
                     </div>
                 </div>
             </div>
+
+            {isStale && (
+                <div className="chart-stale-banner">
+                    Showing the last available session — no ticks for today's window yet.
+                </div>
+            )}
 
             {/* mini stats row */}
             <div className="chart-meta live-meta">

@@ -75,6 +75,23 @@ function App() {
         setRefreshing(false);
     }
 
+    // Wake Render free-tier service before the real dashboard calls hit it.
+    // The free tier spins down after ~15 min of inactivity; the first request
+    // then takes 30–50s to cold-start and surfaces as ERR_INTERNET_DISCONNECTED.
+    // A cheap GET to /api/health right after the user clicks "Enter" warms the
+    // service so subsequent calls succeed immediately.
+    async function wakeBackend() {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 60000);
+            await fetch(`${API_URL}/api/health`, { signal: controller.signal });
+            clearTimeout(timeout);
+        } catch (err) {
+            // Cold-start timeout is fine — the next refresh will retry naturally.
+            console.warn("Backend wake-up ping failed (will retry on next refresh):", err);
+        }
+    }
+
     async function startTraining() {
         if (training) return;
         setLoading(true);
@@ -124,7 +141,13 @@ function App() {
         return (
             <div className="app">
                 <AIStockVideo3D direction={prediction?.direction} scene="hero" />
-                <Landing onEnter={() => setEntered(true)} />
+                <Landing
+                    onEnter={() => {
+                        setEntered(true);
+                        // Warm Render before the dashboard queries land.
+                        wakeBackend();
+                    }}
+                />
             </div>
         );
     }

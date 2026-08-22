@@ -115,40 +115,71 @@ def get_intraday(interval: str = "1m", period: str = "1d") -> dict:
                 ...
             ],
             "previous_close": 1048.0,
+            "data_source": "today" | "last_session" | "fallback",
             "market": { ... }
         }
+
+    Yahoo's 1m interval only returns the *current* trading session.
+    When the market is closed (or hasn't opened yet) we walk back up to
+    `max_lookback_days` to find the most recent session that has bars,
+    so the chart always has something to render.
     """
     session = market_session()
-    try:
-        ticker = yf.Ticker(TICKER)
+    max_lookback_days = 5
 
-        # During market hours use 1m interval (last 1d = up to 7h of bars).
-        # Outside hours, we fall back to the most recent session's bars.
-        hist = ticker.history(period=period, interval=interval)
-
-        if hist is None or hist.empty:
-            raise RuntimeError("No intraday data available")
-
-        # Daily previous close — used as the y-axis reference line
-        daily = ticker.history(period="5d", interval="1d")
-        prev_close = float(daily["Close"].iloc[-2]) if len(daily) >= 2 else float(hist["Close"].iloc[0])
-
-        bars = []
+    def _bars_from(hist):
+        """Convert a yfinance DataFrame to the response bar list."""
+        out = []
         for idx, row in hist.iterrows():
             t = idx.strftime("%H:%M") if hasattr(idx, "strftime") else str(idx)
-            bars.append({
+            out.append({
                 "time": t,
                 "close": round(float(row["Close"]), 2),
                 "high":  round(float(row["High"]),  2),
                 "low":   round(float(row["Low"]),   2),
                 "volume": int(row["Volume"]) if "Volume" in row and not pd_isna(row["Volume"]) else 0
             })
+        return out
+
+    try:
+        ticker = yf.Ticker(TICKER)
+
+        # 1) Try the requested window (typically today)
+        hist = ticker.history(period=period, interval=interval)
+        data_source = "today"
+
+        # 2) If empty, walk back day-by-day to find the last session that has bars
+        if hist is None or hist.empty:
+            for days_back in range(2, max_lookback_days + 1):
+                hist = ticker.history(period=f"{days_back}d", interval=interval)
+                if hist is not None and not hist.empty:
+                    data_source = "last_session"
+                    break
+
+        if hist is None or hist.empty:
+            # 3) Final fallback — daily bars so the chart at least shows movement
+            hist = ticker.history(period="5d", interval="1d")
+            data_source = "fallback"
+            if hist is None or hist.empty:
+                raise RuntimeError("No intraday or daily data available")
+
+        # Daily previous close — used as the y-axis reference line
+        daily = ticker.history(period="5d", interval="1d")
+        if len(daily) >= 2:
+            prev_close = float(daily["Close"].iloc[-2])
+        elif len(daily) == 1:
+            prev_close = float(daily["Close"].iloc[-1])
+        else:
+            prev_close = float(hist["Close"].iloc[0])
+
+        bars = _bars_from(hist)
 
         return {
             "ticker": TICKER,
             "interval": interval,
             "previous_close": round(prev_close, 2),
             "bars": bars,
+            "data_source": data_source,
             "market": session,
         }
     except Exception as exc:
@@ -157,6 +188,7 @@ def get_intraday(interval: str = "1m", period: str = "1d") -> dict:
             "interval": interval,
             "bars": [],
             "previous_close": None,
+            "data_source": "none",
             "error": str(exc),
             "market": session,
         }
