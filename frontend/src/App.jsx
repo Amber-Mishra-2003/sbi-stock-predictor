@@ -1,582 +1,306 @@
-import {
-    useEffect,
-    useState
-} from "react";
-
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import Header from "./components/Header";
-
 import PriceCard from "./components/PriceCard";
-
 import PredictionCard from "./components/PredictionCard";
-
 import ModelStatus from "./components/ModelStatus";
-
 import PriceChart from "./components/PriceChart";
-
 import AIChat from "./components/AIChat";
-
+import Background3D from "./components/Background3D";
+import AIStockVideo3D from "./components/AIStockVideo3D";
+import Landing from "./components/Landing";
+import { fadeUp } from "./components/Motion";
 
 import "./App.css";
-
 
 const API_URL =
     import.meta.env.VITE_API_URL ||
     "http://127.0.0.1:8000";
 
-
 function App() {
+    const [entered, setEntered] = useState(false);
 
-    const [
-        prediction,
-        setPrediction
-    ] = useState(null);
-
-
-    const [
-        status,
-        setStatus
-    ] = useState(null);
-
-
-    const [
-        history,
-        setHistory
-    ] = useState([]);
-
-
-    const [
-        training,
-        setTraining
-    ] = useState(false);
-
-
-    const [
-        loading,
-        setLoading
-    ] = useState(false);
-
-
-    const [
-        error,
-        setError
-    ] = useState("");
-
+    const [prediction, setPrediction] = useState(null);
+    const [status, setStatus] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [training, setTraining] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
     async function fetchPrediction() {
-
         try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/latest`
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Prediction request failed"
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
+            const response = await fetch(`${API_URL}/api/latest`);
+            if (!response.ok) throw new Error("Prediction request failed");
+            const data = await response.json();
             setPrediction(data);
-
             setError("");
-
-
-        } catch (error) {
-
-            console.error(
-                "Prediction error:",
-                error
-            );
-
-
-            setError(
-                "Unable to connect to prediction backend."
-            );
-
+        } catch (err) {
+            console.error("Prediction error:", err);
+            setError("Unable to connect to prediction backend.");
         }
-
     }
-
 
     async function fetchStatus() {
-
         try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/status`
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Status request failed"
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
+            const response = await fetch(`${API_URL}/api/status`);
+            if (!response.ok) throw new Error("Status request failed");
+            const data = await response.json();
             setStatus(data);
-
-
-            setTraining(
-                data.training_status ===
-                "TRAINING"
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "Status error:",
-                error
-            );
-
+            setTraining(data.training_status === "TRAINING");
+        } catch (err) {
+            console.error("Status error:", err);
         }
-
     }
-
 
     async function fetchHistory() {
-
         try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/history`
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "History request failed"
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            setHistory(
-                data.data || []
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "History error:",
-                error
-            );
-
+            const response = await fetch(`${API_URL}/api/history`);
+            if (!response.ok) throw new Error("History request failed");
+            const data = await response.json();
+            setHistory(data.data || []);
+        } catch (err) {
+            console.error("History error:", err);
         }
-
     }
-
 
     async function refreshDashboard() {
-
-        await Promise.all([
-            fetchStatus(),
-            fetchPrediction(),
-            fetchHistory()
-        ]);
-
+        setRefreshing(true);
+        await Promise.all([fetchStatus(), fetchPrediction(), fetchHistory()]);
+        setLastUpdated(new Date());
+        setRefreshing(false);
     }
-
 
     async function startTraining() {
-
-        if (training) {
-
-            return;
-
-        }
-
-
+        if (training) return;
         setLoading(true);
-
         setError("");
-
-
         try {
-
-            const response =
-                await fetch(
-                    `${API_URL}/api/train`,
-                    {
-                        method: "POST"
-                    }
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Training request failed"
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            console.log(
-                "Training:",
-                data
-            );
-
-
+            const response = await fetch(`${API_URL}/api/train`, { method: "POST" });
+            if (!response.ok) throw new Error("Training request failed");
+            console.log("Training:", await response.json());
             setTraining(true);
-
-
-        } catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            setError(
-                "Unable to start model training."
-            );
-
-
+        } catch (err) {
+            console.error(err);
+            setError("Unable to start model training.");
         } finally {
-
             setLoading(false);
-
         }
-
     }
 
-
     useEffect(() => {
-
         refreshDashboard();
-
-
-        const interval =
-            setInterval(
-                () => {
-
-                    fetchStatus();
-
-                },
-                5000
-            );
-
-
-        return () => {
-
-            clearInterval(
-                interval
-            );
-
-        };
-
+        const interval = setInterval(() => fetchStatus(), 5000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-
     useEffect(() => {
-
-        if (!training) {
-
-            return;
-
-        }
-
-
-        const interval =
-            setInterval(
-                async () => {
-
-                    try {
-
-                        const response =
-                            await fetch(
-                                `${API_URL}/api/train/status`
-                            );
-
-
-                        const data =
-                            await response.json();
-
-
-                        if (
-                            data.status ===
-                            "IDLE"
-                        ) {
-
-                            setTraining(
-                                false
-                            );
-
-
-                            await fetchStatus();
-
-                            await fetchPrediction();
-
-                            await fetchHistory();
-
-                        }
-
-                    } catch (error) {
-
-                        console.error(
-                            error
-                        );
-
-                    }
-
-                },
-                3000
-            );
-
-
-        return () => {
-
-            clearInterval(
-                interval
-            );
-
-        };
-
+        if (!training) return;
+        const interval = setInterval(async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/train/status`);
+                const data = await response.json();
+                if (data.status === "IDLE") {
+                    setTraining(false);
+                    await fetchStatus();
+                    await fetchPrediction();
+                    await fetchHistory();
+                    setLastUpdated(new Date());
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }, 3000);
+        return () => clearInterval(interval);
     }, [training]);
 
+    // Landing overlay — shown once on first load, dismissed by clicking Enter
+    if (!entered) {
+        return (
+            <div className="app">
+                <AIStockVideo3D direction={prediction?.direction} scene="hero" />
+                <Landing onEnter={() => setEntered(true)} />
+            </div>
+        );
+    }
 
     return (
-
         <div className="app">
+            <AIStockVideo3D direction={prediction?.direction} scene="dashboard" />
 
-
-            <Header
-                training={
-                    training
-                }
-            />
-
+            <Header training={training} />
 
             <main className="dashboard">
+                <AnimatePresence>
+                    {error && (
+                        <motion.div
+                            className="error"
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-
-                {error && (
-
-                    <div className="error">
-
-                        {error}
-
-                    </div>
-
-                )}
-
-
-                <section className="hero">
-
-
+                <motion.section
+                    className="hero"
+                    variants={fadeUp}
+                    initial="hidden"
+                    animate="visible"
+                    transition={{ duration: 0.6 }}
+                >
                     <div>
+                        <motion.div
+                            className="eyebrow"
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            AI POWERED · MARKET INTELLIGENCE
+                        </motion.div>
 
-                        <div className="eyebrow">
-
-                            AI POWERED
-                            MARKET INTELLIGENCE
-
-                        </div>
-
-
-                        <h1>
-
+                        <motion.h1
+                            initial={{ opacity: 0, y: 14 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15, duration: 0.6 }}
+                        >
                             SBI Stock
                             <br />
+                            <span className="hero-gradient">Predictor</span>
+                        </motion.h1>
 
-                            Predictor
-
-                        </h1>
-
-
-                        <p>
-
-                            Close price forecasting
-                            using XGBoost + LSTM
-
-                        </p>
-
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            Close price forecasting using XGBoost + LSTM
+                        </motion.p>
                     </div>
 
-
-                    <div className="market-status">
-
+                    <motion.div
+                        className="market-status"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.25, type: "spring", stiffness: 260, damping: 20 }}
+                    >
                         <span
                             className={
-                                status?.status ===
-                                "READY"
-
+                                status?.status === "READY"
                                     ? "status-dot"
-
                                     : "status-dot offline"
                             }
                         />
+                        {status?.status === "READY" ? "MODEL ONLINE" : "CONNECTING..."}
+                    </motion.div>
+                </motion.section>
 
-
-                        {status?.status ===
-                        "READY"
-
-                            ? "MODEL ONLINE"
-
-                            : "CONNECTING..."
-                        }
-
-                    </div>
-
-                </section>
-
-
-                {prediction && (
-
-                    <>
-
-
-                        <section
+                <AnimatePresence mode="wait">
+                    {prediction && (
+                        <motion.section
+                            key="top-grid"
                             className="top-grid"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                         >
+                            <PriceCard prediction={prediction} />
+                            <PredictionCard prediction={prediction} />
+                        </motion.section>
+                    )}
 
-
-                            <PriceCard
-                                prediction={
-                                    prediction
-                                }
-                            />
-
-
-                            <PredictionCard
-                                prediction={
-                                    prediction
-                                }
-                            />
-
-
-                        </section>
-
-
+                    {prediction && (
                         <PriceChart
-                            history={
-                                history
-                            }
-                            prediction={
-                                prediction
-                            }
+                            key="chart"
+                            history={history}
+                            prediction={prediction}
                         />
+                    )}
 
-
+                    {prediction && (
                         <ModelStatus
-                            status={
-                                status
-                            }
-                            training={
-                                training
-                            }
+                            key="status"
+                            status={status}
+                            training={training}
                         />
+                    )}
+                </AnimatePresence>
 
-
-                    </>
-
+                {!prediction && !error && (
+                    <motion.div
+                        className="loading-card"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                    >
+                        <span className="loading-spinner" />
+                        Loading SBI prediction...
+                    </motion.div>
                 )}
 
-
-                {!prediction &&
-                    !error && (
-
-                        <div
-                            className="loading-card"
-                        >
-
-                            Loading SBI
-                            prediction...
-
-                        </div>
-
-                    )
-                }
-
-
-                <section className="controls">
-
-
-                    <button
+                <motion.section
+                    className="controls"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <motion.button
                         className="train-button"
-
-                        onClick={
-                            startTraining
-                        }
-
-                        disabled={
-                            training ||
-                            loading
-                        }
+                        onClick={startTraining}
+                        disabled={training || loading}
+                        whileHover={!(training || loading) ? { scale: 1.03, y: -2 } : {}}
+                        whileTap={!(training || loading) ? { scale: 0.97 } : {}}
                     >
+                        {training ? (
+                            <>
+                                <span className="btn-spinner" />
+                                Training Models...
+                            </>
+                        ) : (
+                            "Retrain Models"
+                        )}
+                    </motion.button>
 
-                        {training
-
-                            ? "Training Models..."
-
-                            : "Retrain Models"
-
-                        }
-
-                    </button>
-
-
-                    <button
+                    <motion.button
                         className="refresh-button"
-
-                        onClick={
-                            refreshDashboard
-                        }
+                        onClick={refreshDashboard}
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileTap={{ scale: 0.97 }}
                     >
-
+                        <motion.span
+                            animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
+                            transition={
+                                refreshing
+                                    ? { duration: 0.8, ease: "linear", repeat: Infinity }
+                                    : { duration: 0.3 }
+                            }
+                            style={{ display: "inline-block", marginRight: 8 }}
+                        >
+                            ↻
+                        </motion.span>
                         Refresh Prediction
+                    </motion.button>
 
-                    </button>
+                    {lastUpdated && (
+                        <motion.div
+                            className="last-updated"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                        >
+                            Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </motion.div>
+                    )}
+                </motion.section>
 
-
-                </section>
-
-
-                <AIChat
-                    prediction={
-                        prediction
-                    }
-                />
-
-
+                {prediction && <AIChat prediction={prediction} />}
             </main>
-
-
         </div>
-
     );
-
 }
-
 
 export default App;

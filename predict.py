@@ -9,11 +9,17 @@ def main():
 
     df = pd.read_csv(
         "data/sbi_data.csv",
-        skiprows=[1],
         index_col=0
     )
 
+    # Sort by date ascending so the most recent rows are at the end —
+    # this matches how the LSTM model expects the sequence.
+    df.index = pd.to_datetime(df.index)
+    df = df.sort_index()
+
     print("Columns:", df.columns.tolist())
+    print(f"Date range: {df.index.min().date()} -> {df.index.max().date()}")
+    print(f"Total rows: {len(df)}")
 
     if "Close" not in df.columns:
         raise ValueError(

@@ -1,0 +1,204 @@
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+.landing {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-section {
+  position: relative;
+  height: 100vh;
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.landing-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.landing-content {
+  position: relative;
+  z-index: 2;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+}
+
+.landing-content .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.landing-content h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0;
+  background: linear-gradient(180deg, var(--text), var(--muted));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-content p {
+  max-width: 460px;
+  color: var(--muted);
+  font-size: 15.5px;
+  line-height: 1.65;
+  margin: 22px 0 0;
+}
+
+.enter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 34px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+  padding: 13px 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--positive));
+  color: #00131a;
+  transition: transform 160ms ease;
+}
+.enter-btn:hover { transform: translateY(-2px); }
+
+/* ---------- Section 1: candlestick skyline ---------- */
+.skyline {
+  position: absolute;
+  bottom: -2px;
+  left: -5%;
+  width: 110%;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.skyline span {
+  flex: 1;
+  min-width: 6px;
+  border-radius: 3px 3px 0 0;
+}
+
+.skyline-back {
+  opacity: 0.28;
+  filter: blur(0.5px);
+}
+.skyline-back span { background: linear-gradient(180deg, var(--accent), transparent); }
+
+.skyline-mid {
+  opacity: 0.42;
+}
+.skyline-mid span { background: linear-gradient(180deg, var(--positive), transparent); }
+
+.skyline-front {
+  opacity: 0.75;
+}
+.skyline-front span {
+  background: linear-gradient(180deg, var(--accent), var(--positive));
+  box-shadow: 0 0 18px -4px var(--accent);
+}
+
+.glow-cyan {
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(0,217,255,0.14), transparent 65%);
+  filter: blur(10px);
+}
+
+/* ---------- Section 2: convergence ---------- */
+.landing-bg-converge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beam {
+  position: absolute;
+  top: 50%;
+  width: 46%;
+  height: 3px;
+  border-radius: 4px;
+  filter: blur(1px);
+  transition: none;
+}
+
+.beam-cyan {
+  left: 0;
+  background: linear-gradient(90deg, transparent, var(--accent));
+  box-shadow: 0 0 30px 2px rgba(0,217,255,0.5);
+}
+
+.beam-amber {
+  right: 0;
+  background: linear-gradient(270deg, transparent, var(--prediction));
+  box-shadow: 0 0 30px 2px rgba(255,176,32,0.5);
+}
+
+.core {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(0,217,255,0.5) 40%, transparent 72%);
+  box-shadow: 0 0 60px 12px rgba(0,217,255,0.35);
+  opacity: 0.2;
+}
+
+/* ---------- Section 3: analyst rings ---------- */
+.ring {
+  position: absolute;
+  top: 50%;
+  left: 78%;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,217,255,0.35);
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0.2;
+}
+
+.ring-2 {
+  width: 620px;
+  height: 620px;
+  border-color: rgba(255,176,32,0.2);
+  animation: ring-pulse 6s ease-in-out infinite;
+}
+
+@keyframes ring-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.15; }
+  50% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.3; }
+}
+
+@media (max-width: 760px) {
+  .landing-content { padding: 0 20px; }
+  .ring, .ring-2 { left: 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-2 { animation: none; }
+}
