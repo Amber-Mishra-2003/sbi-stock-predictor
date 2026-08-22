@@ -291,13 +291,10 @@
   justify-content: space-between;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 20px 32px;
+  padding: 18px 32px;
   border-bottom: 1px solid var(--border-soft);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(7, 10, 16, 0.7);
-  backdrop-filter: blur(14px);
+  position: relative;
+  z-index: 5;
 }
 
 .brand { display: flex; align-items: center; gap: 14px; }
@@ -1145,3 +1142,344 @@
 }
 
 .chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ==========================================================
+   LIVE TICKER (sticky banner above header)
+   Shows real-time SBIN.NS price during market hours.
+   ========================================================== */
+.live-ticker {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr 1.2fr;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border-soft);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: rgba(7, 10, 16, 0.85);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  max-width: 100%;
+}
+
+.live-ticker.open {
+  background:
+    linear-gradient(90deg, rgba(0, 255, 163, 0.08), rgba(0, 217, 255, 0.05) 50%, rgba(0, 255, 163, 0.08));
+  border-bottom-color: rgba(0, 255, 163, 0.28);
+  box-shadow: 0 6px 24px -16px rgba(0, 255, 163, 0.45);
+}
+
+.live-ticker.pre,
+.live-ticker.post {
+  background:
+    linear-gradient(90deg, rgba(255, 176, 32, 0.06), rgba(0, 217, 255, 0.03) 50%, rgba(255, 176, 32, 0.06));
+  border-bottom-color: rgba(255, 176, 32, 0.28);
+}
+
+.live-ticker.closed {
+  background: rgba(7, 10, 16, 0.85);
+}
+
+/* LEFT — status */
+.ticker-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.live-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.live-dot.on {
+  background: var(--positive);
+  box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.6), 0 0 12px var(--positive);
+}
+
+.live-dot.off {
+  background: var(--muted);
+  box-shadow: 0 0 8px rgba(124, 135, 152, 0.3);
+}
+
+.ticker-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ticker-session {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--positive);
+  font-size: 11.5px;
+}
+
+.ticker.pre .ticker-session,
+.ticker.post .ticker-session,
+.live-ticker.pre .ticker-session,
+.live-ticker.post .ticker-session { color: var(--prediction); }
+
+.live-ticker.closed .ticker-session { color: var(--muted); }
+
+.ticker-sub {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* CENTER — price */
+.ticker-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.ticker-price.positive { border-color: rgba(0, 255, 163, 0.4); }
+.ticker-price.negative { border-color: rgba(255, 68, 99, 0.4); }
+
+.price-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.price-value .rupee {
+  font-size: 16px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.ticker-price.positive .price-value { color: var(--positive); }
+.ticker-price.negative .price-value { color: var(--negative); }
+.ticker-price.neutral  .price-value { color: var(--text); }
+
+.price-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.price-change.positive { color: var(--positive); background: rgba(0, 255, 163, 0.12); }
+.price-change.negative { color: var(--negative); background: rgba(255, 68, 99, 0.12); }
+.price-change.neutral  { color: var(--muted); }
+
+.price-pct {
+  margin-left: 2px;
+  opacity: 0.85;
+}
+
+/* tick flash — green/red glow on price box when a fresh tick arrives */
+.ticker-price.tick-up {
+  animation: tickFlashUp 0.55s ease-out;
+}
+
+.ticker-price.tick-down {
+  animation: tickFlashDown 0.55s ease-out;
+}
+
+@keyframes tickFlashUp {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.7), inset 0 0 0 1px rgba(0, 255, 163, 0.6);
+    background: rgba(0, 255, 163, 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(0, 255, 163, 0);
+    background: var(--bg-elevated);
+  }
+}
+
+@keyframes tickFlashDown {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 68, 99, 0.7), inset 0 0 0 1px rgba(255, 68, 99, 0.6);
+    background: rgba(255, 68, 99, 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(255, 68, 99, 0);
+    background: var(--bg-elevated);
+  }
+}
+
+/* RIGHT — clock + last tick */
+.ticker-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ticker-symbol {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.ticker-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+
+.ticker-clock svg { color: var(--muted); }
+
+.ticker-last {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+.ticker-last svg.active { color: var(--positive); animation: pulse-soft 2s ease-in-out infinite; }
+
+/* responsive — stack on small screens */
+@media (max-width: 820px) {
+  .live-ticker {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .ticker-left,
+  .ticker-right { align-items: flex-start; }
+  .ticker-right { align-items: flex-start; }
+  .ticker-price { padding: 6px 12px; }
+  .price-value { font-size: 20px; }
+}
+
+/* ==========================================================
+   LIVE CHART (intraday minute chart)
+   Plotted between PriceCard row and the daily PriceChart.
+   Glowing live dot pulses at the latest tick.
+   ========================================================== */
+.live-chart { padding: 24px 26px; }
+
+.live-chart.session-open {
+  border-color: rgba(0, 255, 163, 0.28);
+  box-shadow:
+    var(--shadow-card),
+    0 0 0 1px rgba(0, 255, 163, 0.06) inset,
+    0 0 40px -10px rgba(0, 255, 163, 0.15);
+}
+
+.live-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.live-chart-header h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.live-chart .live-pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--positive);
+  box-shadow: 0 0 8px var(--positive);
+  margin-right: 4px;
+  animation: pulse-soft 1.8s ease-in-out infinite;
+}
+
+.live-meta {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 640px) {
+  .live-meta { grid-template-columns: repeat(2, 1fr); }
+}
+
+.live-chart-canvas {
+  position: relative;
+  height: 340px;
+}
+
+.live-chart-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: linear-gradient(180deg, transparent, rgba(7, 10, 16, 0.4) 60%);
+  pointer-events: none;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+}
+
+.live-chart-overlay svg { color: var(--prediction); }
+
+.legend-volume {
+  width: 12px;
+  height: 10px;
+  display: inline-block;
+  background: var(--grid);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+.legend-prev {
+  width: 16px;
+  height: 0;
+  display: inline-block;
+  border-top: 2px dashed var(--dim);
+}
+
+.sparkline-info {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.sparkline-info svg { color: var(--positive); }
+

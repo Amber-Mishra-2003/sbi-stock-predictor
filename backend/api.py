@@ -11,6 +11,12 @@ from backend.services.training_service import (
     TrainingService
 )
 
+from backend.services.market_service import (
+    get_live_quote,
+    market_session,
+    get_intraday,
+)
+
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -57,6 +63,36 @@ def health():
         "status": "UP",
         "service": "SBI AI Predictor"
     }
+
+
+@app.get("/api/quote")
+def quote():
+    """Latest live SBIN.NS quote (intraday tick during market hours)."""
+    try:
+        return get_live_quote()
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+
+@app.get("/api/market")
+def market():
+    """NSE market session info (is_open, next_open, etc.)."""
+    try:
+        return market_session()
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+
+@app.get("/api/intraday")
+def intraday(interval: str = "1m", period: str = "1d"):
+    """
+    Today's 1-minute (or 5-minute) bars for SBIN.NS.
+    Used by the frontend LiveChart for a real-time intraday plot.
+    """
+    try:
+        return get_intraday(interval=interval, period=period)
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
 
 
 @app.get("/api/status")

@@ -7,6 +7,8 @@ import PredictionCard from "./components/PredictionCard";
 import ModelStatus from "./components/ModelStatus";
 import PriceChart from "./components/PriceChart";
 import AIChat from "./components/AIChat";
+import LiveTicker from "./components/LiveTicker";
+import LiveChart from "./components/LiveChart";
 import Background3D from "./components/Background3D";
 import AIStockVideo3D from "./components/AIStockVideo3D";
 import Landing from "./components/Landing";
@@ -131,6 +133,8 @@ function App() {
         <div className="app">
             <AIStockVideo3D direction={prediction?.direction} scene="dashboard" />
 
+            <LiveTicker />
+
             <Header training={training} />
 
             <main className="dashboard">
@@ -212,6 +216,10 @@ function App() {
                             <PriceCard prediction={prediction} />
                             <PredictionCard prediction={prediction} />
                         </motion.section>
+                    )}
+
+                    {prediction && (
+                        <LiveChart key="live-chart" />
                     )}
 
                     {prediction && (
